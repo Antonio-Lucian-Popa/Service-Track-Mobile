@@ -1,70 +1,155 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { useState } from 'react';
-import { View, Alert, StyleSheet, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Alert, StyleSheet, ScrollView, Image, PermissionsAndroid, Platform } from 'react-native';
 import { Button, IconButton } from 'react-native-paper';
 import DocumentScanner from 'react-native-document-scanner-plugin';
-// import { PDFDocument, PDFPage } from 'react-native-pdf-lib';
-// import RNFS from 'react-native-fs';
+import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import FileViewer from 'react-native-file-viewer';
+import RNFS from 'react-native-fs';
 
 const DocumentScannerScreen = () => {
   const [scannedImages, setScannedImages] = useState<string[]>([]);
-  // const [pdfPath, setPdfPath] = useState<string | null>(null);
+  const [pdfPath, setPdfPath] = useState<string | null>(null);
 
-  // 🔹 Funcție pentru scanarea documentelor
-  const handleScanDocument = async () => {
-    const { scannedImages: newScannedImages } = await DocumentScanner.scanDocument();
-    if (newScannedImages && newScannedImages.length > 0) {
-      setScannedImages(newScannedImages);
-      Alert.alert('Succes', 'Scanare completă!');
-    } else {
-      Alert.alert('Eroare', 'Nicio imagine scanată.');
+  // 🔹 Cerere permisiuni la montare
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      requestStoragePermission();
+    }
+  }, []);
+
+  // 🔹 Cerere permisiuni Android
+  const requestStoragePermission = async () => {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        {
+          title: 'Acces la fișiere',
+          message: 'Aplicația are nevoie de permisiune pentru a deschide fișiere PDF.',
+          buttonNeutral: 'Mai târziu',
+          buttonNegative: 'Refuz',
+          buttonPositive: 'Permite',
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn('Eroare permisiuni:', err);
+      return false;
     }
   };
 
-  // 🔹 Funcție pentru eliminarea unei imagini scanate
+  // 🔹 Funcție pentru scanarea documentelor
+  const handleScanDocument = async () => {
+    try {
+      const { scannedImages: newScannedImages } = await DocumentScanner.scanDocument();
+      if ((newScannedImages ?? []).length > 0) {
+        setScannedImages([...scannedImages, ...(newScannedImages ?? [])]);
+        Alert.alert('Succes', 'Scanare completă!');
+      } else {
+        Alert.alert('Eroare', 'Nicio imagine scanată.');
+      }
+    } catch (error) {
+      console.error('Eroare scanare:', error);
+      Alert.alert('Eroare', 'A apărut o problemă la scanare.');
+    }
+  };
+
+  // 🔹 Eliminarea unei imagini scanate
   const handleRemoveImage = (index: number) => {
     setScannedImages((prevImages) => prevImages.filter((_, i) => i !== index));
   };
 
-  // 🔹 Funcție pentru crearea PDF-ului
-  // const generatePDF = async () => {
-  //   if (scannedImages.length === 0) {
-  //     Alert.alert('Eroare', 'Nu există imagini scanate!');
-  //     return;
-  //   }
+  // 🔹 Generare PDF
+  const generatePDF = async () => {
+    if (scannedImages.length === 0) {
+      Alert.alert('Eroare', 'Nu există imagini scanate!');
+      return;
+    }
 
-  //   try {
-  //     const newPdfPath = `${RNFS.DocumentDirectoryPath}/document-scanned.pdf`;
+    let htmlContent = `
+      <html>
+        <head>
+          <style>
+            * { margin: 0; padding: 0; }
+            body { width: 100%; height: 100%; }
+            .page { display: flex; align-items: center; justify-content: center; height: 100vh; }
+            img { width: 100vw; height: 100vh; object-fit: cover; } 
+          </style>
+        </head>
+        <body>
+    `;
 
-  //     // 🔹 Creăm o pagină PDF pentru fiecare imagine scanată
-  //     const pages = scannedImages.map((image) =>
-  //       PDFPage.create()
-  //         .setMediaBox(612, 792) // Dimensiunea paginii (A4)
-  //         .drawImage(image, {
-  //           x: 5,
-  //           y: 5,
-  //           width: 600,
-  //           height: 780,
-  //         })
-  //     );
+    scannedImages.forEach((imageUri, index) => {
+      htmlContent += `
+        <div class="page" ${index < scannedImages.length - 1 ? 'style="page-break-after: always;"' : ''}>
+          <img src="${imageUri}" />
+        </div>
+      `;
+    });
 
-  //     // 🔹 Creăm documentul PDF
-  //     const pdfDoc = PDFDocument.create(newPdfPath).addPages(pages);
-  //     await pdfDoc.write();
+    htmlContent += `
+        </body>
+      </html>
+    `;
 
-  //     setPdfPath(newPdfPath);
-  //     Alert.alert('Succes', 'PDF generat!', [{ text: `Salvat la: ${newPdfPath}` }]);
-  //   } catch (error) {
-  //     console.error('Eroare la generarea PDF-ului:', error);
-  //     Alert.alert('Eroare', 'Nu s-a putut genera PDF-ul.');
-  //   }
-  // };
+    try {
+      const options = {
+        html: htmlContent,
+        fileName: 'scanned_document',
+        directory: 'Documents',
+        base64: false,
+      };
+
+      const pdf = await RNHTMLtoPDF.convert(options);
+      if (pdf.filePath) {
+        setPdfPath(pdf.filePath);
+        Alert.alert('Succes', `PDF generat: ${pdf.filePath}`);
+      } else {
+        Alert.alert('Eroare', 'Nu s-a putut genera PDF-ul.');
+      }
+    } catch (error) {
+      console.error('Eroare la generarea PDF-ului:', error);
+      Alert.alert('Eroare', 'Nu s-a putut genera PDF-ul.');
+    }
+  };
+
+
+  // 🔹 Verificarea existenței PDF-ului
+  const checkPDFExists = async (path: string) => {
+    const exists = await RNFS.exists(path);
+    if (!exists) {
+      Alert.alert('Eroare', 'Fișierul PDF nu există!');
+      return false;
+    }
+    return true;
+  };
+
+  // 🔹 Funcție pentru deschiderea PDF-ului
+  const openPDF = async () => {
+    if (!pdfPath) {
+      Alert.alert('Eroare', 'Nu există PDF generat.');
+      return;
+    }
+
+    const exists = await checkPDFExists(pdfPath);
+    if (!exists) return;
+
+    try {
+      const filePath = Platform.OS === 'android' ? `file://${pdfPath}` : pdfPath;
+      await FileViewer.open(filePath, { showOpenWithDialog: true });
+    } catch (error) {
+      console.error('Eroare deschidere PDF:', error);
+      Alert.alert('Eroare', 'Nu s-a putut deschide PDF-ul. Verifică dacă ai un vizualizator PDF instalat.');
+    }
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.buttonRow}>
         <Button mode="contained" onPress={handleScanDocument} style={styles.button}>
           Scanare Document
+        </Button>
+        <Button mode="contained" onPress={generatePDF} style={styles.button} disabled={scannedImages.length === 0}>
+          Generează PDF
         </Button>
       </View>
 
@@ -84,12 +169,12 @@ const DocumentScannerScreen = () => {
         ))}
       </ScrollView>
 
-      {/* <Button mode="contained" onPress={generatePDF} style={styles.button} disabled={scannedImages.length === 0}>
-          Generează PDF
-        </Button> */}
-
-
-      {/* {pdfPath && <Button mode="contained" onPress={() => Alert.alert('Locație PDF', pdfPath)}>Vezi Locație PDF</Button>} */}
+      {/* 🔹 Buton pentru deschiderea PDF-ului */}
+      {pdfPath && (
+        <Button mode="contained" onPress={openPDF} style={styles.openPdfButton}>
+          Deschide PDF
+        </Button>
+      )}
     </View>
   );
 };
@@ -100,22 +185,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f8f8',
+    padding: 10,
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Distribuie spațial butoanele
-    width: '90%', // Ocupă aproape tot ecranul
+    justifyContent: 'space-between',
+    width: '90%',
     marginTop: 10,
   },
   button: {
-    flex: 1, // Face butoanele să se întindă egal
-    marginHorizontal: 5, // Adaugă spațiu între ele
+    flex: 1,
+    marginHorizontal: 5,
   },
   imageContainer: {
     marginTop: 20,
-    flexDirection: 'row', // 🔥 Poze pe același rând
-    flexWrap: 'wrap', // 🔥 Permite trecerea pe rând nou dacă ecranul e mic
-    justifyContent: 'center', // 🔹 Centrează pozele
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     paddingBottom: 20,
   },
   imageWrapper: {
@@ -137,6 +223,10 @@ const styles = StyleSheet.create({
     right: 10,
     backgroundColor: 'white',
     borderRadius: 20,
+  },
+  openPdfButton: {
+    marginTop: 20,
+    width: '90%',
   },
 });
 
