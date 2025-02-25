@@ -4,6 +4,10 @@ import DocumentScannerComponent from '../components/DocumentScanner';
 import { Text } from 'react-native';
 import { Button, Checkbox, Divider, TextInput, List } from 'react-native-paper';
 import { DatePickerModal } from 'react-native-paper-dates';
+import { useEffect } from 'react';
+import { Picker } from '@react-native-picker/picker';
+import serviceUtilaj, { ServiceUtilaj } from '../services/ServiceUtilaj';
+import { useNavigation } from '@react-navigation/native';
 
 const HomeScreen = () => {
   const [formData, setFormData] = useState({
@@ -19,17 +23,37 @@ const HomeScreen = () => {
     },
     rev1: {
       cutieK: false,
-      uleiCutie: false,
-      punt: false,
+      uleiCutieK: false,
+      punte: false,
     },
     rev2: {
       hidraulic: false,
       uleiHidraulic: false,
     },
     detaliiLucrariEfectuate: '',
+    service: '',
   });
 
   const [datePickerVisible, setDatePickerVisible] = useState(false);
+  const [services, setServices] = useState<ServiceUtilaj[]>([]);
+  const [selectedService] = useState<string>(formData.service);
+  const navigation = useNavigation();
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      const servicesList = await serviceUtilaj.findAllServicesOnUtilajId('3544', navigation);
+      if(servicesList && servicesList.length > 0) {
+        setServices(servicesList);
+      }
+    };
+
+    fetchServices();
+  }, [navigation]);
+
+  useEffect(() => {
+    handleChange('service', selectedService);
+  }, [selectedService]);
+
 
   // ✅ Funcție generală pentru actualizarea valorilor în formular
   const handleChange = (field: string, value: any) => {
@@ -104,44 +128,56 @@ const HomeScreen = () => {
 
         {/* 🔥 Lista de revizii */}
         <List.Section title="Date Vehicul">
-          <List.Accordion title="Revizie Motor">
+          <List.Accordion title="Revizie">
             {Object.keys(formData.rev).map((key) => (
               <View style={styles.checkboxContainer} key={key}>
                 <Checkbox
                   status={formData.rev[key as keyof typeof formData.rev] ? 'checked' : 'unchecked'}
                   onPress={() => handleCheckboxChange('rev', key)}
                 />
-                <Text>{key.replace(/([A-Z])/g, ' $1').trim()}</Text>
+                <Text>{key.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, char => char.toUpperCase())}</Text>
               </View>
             ))}
           </List.Accordion>
 
-          <List.Accordion title="Revizie Cutie & Punt">
+          <List.Accordion title="Revizie 1 +">
             {Object.keys(formData.rev1).map((key) => (
               <View style={styles.checkboxContainer} key={key}>
                 <Checkbox
                   status={formData.rev1[key as keyof typeof formData.rev1] ? 'checked' : 'unchecked'}
                   onPress={() => handleCheckboxChange('rev1', key)}
                 />
-                <Text>{key.replace(/([A-Z])/g, ' $1').trim()}</Text>
+                <Text>{key.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, char => char.toUpperCase())}</Text>
               </View>
             ))}
           </List.Accordion>
 
-          <List.Accordion title="Revizie Hidraulică">
+          <List.Accordion title="Revizie 2 +">
             {Object.keys(formData.rev2).map((key) => (
               <View style={styles.checkboxContainer} key={key}>
                 <Checkbox
                   status={formData.rev2[key as keyof typeof formData.rev2] ? 'checked' : 'unchecked'}
                   onPress={() => handleCheckboxChange('rev2', key)}
                 />
-                <Text>{key.replace(/([A-Z])/g, ' $1').trim()}</Text>
+                <Text>{key.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, char => char.toUpperCase())}</Text>
               </View>
             ))}
           </List.Accordion>
         </List.Section>
 
         <Divider />
+
+        <View style={styles.pickerContainer}>
+          <Text style={styles.labelText}>Service</Text>
+          <Picker
+            selectedValue={selectedService}
+            onValueChange={(itemValue) => handleChange('service', itemValue)}
+          >
+            {services.map((service, index) => (
+              <Picker.Item key={index} label={service.titlu} value={service} />
+            ))}
+          </Picker>
+        </View>
 
         {/* TextArea pentru detalii lucrări */}
         <TextInput
@@ -187,6 +223,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 20,
   },
+  labelText: {
+    fontSize: 16,
+  },
   input: {
     marginHorizontal: 10,
     marginVertical: 5,
@@ -203,6 +242,9 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 10,
+    margin: 10,
+  },
+  pickerContainer: {
     margin: 10,
   },
 });

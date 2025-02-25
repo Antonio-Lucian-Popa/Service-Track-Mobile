@@ -1,6 +1,9 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import React from 'react';
 import { View, Alert, StyleSheet } from 'react-native';
 import { List, Avatar, Divider, Button } from 'react-native-paper';
+import { useAuth } from '../context/AuthContext';
 
 // Simulăm datele utilizatorului
 const user = {
@@ -11,14 +14,24 @@ const user = {
 const appVersion = '1.0.0'; // Versiunea aplicației
 
 const SettingsScreen: React.FC = () => {
+  
+  const { setUserToken } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert(
       'Deconectare',
       'Ești sigur că vrei să te deconectezi?',
       [
         { text: 'Anulează', style: 'cancel' },
-        { text: 'Logout', onPress: () => console.log('User logged out') },
+        {
+          text: 'Logout', onPress: async () => {
+            console.log('User logged out');
+            // 🔴 Deconectare utilizator
+            await AsyncStorage.removeItem('accessToken');
+            await AsyncStorage.removeItem('refreshToken');
+            setUserToken(null);
+          }
+        },
       ]
     );
   };
