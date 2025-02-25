@@ -14,7 +14,7 @@ const user = {
 const appVersion = '1.0.0'; // Versiunea aplicației
 
 const SettingsScreen: React.FC = () => {
-  
+
   const { setUserToken } = useAuth();
 
   const handleLogout = async () => {
@@ -30,7 +30,7 @@ const SettingsScreen: React.FC = () => {
             await AsyncStorage.removeItem('accessToken');
             await AsyncStorage.removeItem('refreshToken');
             setUserToken(null);
-          }
+          },
         },
       ]
     );
