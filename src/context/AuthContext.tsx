@@ -5,7 +5,7 @@ import { Alert } from 'react-native';
 
 type AuthContextType = {
   userToken: string | null;
-  setUserToken: (token: string | null) => void; // ✅ Adăugat setUserToken
+  setUserToken: (token: string | null) => void;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
@@ -13,23 +13,32 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [userToken, setUserToken] = useState<string | null>(null); // ✅ Adăugat în state
+  const [userToken, setUserToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadToken = async () => {
+    const checkToken = async () => {
       const savedToken = await AsyncStorage.getItem('accessToken');
+      const refreshToken = await AsyncStorage.getItem('refreshToken');
+
       if (savedToken) {
         setUserToken(savedToken);
+      } else if (refreshToken) {
+        const newToken = await apiService.refreshAccessToken();
+        if (newToken) {
+          setUserToken(newToken);
+        }
       }
     };
-    loadToken();
+
+    checkToken();
   }, []);
 
   const login = async (username: string, password: string) => {
     const response = await apiService.login(username, password);
     if (response) {
-      setUserToken(response.access); // ✅ Setăm accessToken în context
+      setUserToken(response.access);
       await AsyncStorage.setItem('accessToken', response.access);
+      await AsyncStorage.setItem('refreshToken', response.refresh);
     } else {
       Alert.alert('Autentificare eșuată');
     }
@@ -38,7 +47,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     await AsyncStorage.removeItem('accessToken');
     await AsyncStorage.removeItem('refreshToken');
-    setUserToken(null); // ✅ Resetăm token-ul
+    setUserToken(null);
   };
 
   return (

@@ -16,9 +16,6 @@ const apiService = {
         body: JSON.stringify({ username, password }),
       });
 
-      console.log('Trimitem request cu:', { username, password });
-
-
       const data = await response.json();
       if (response.ok) {
         await AsyncStorage.setItem('accessToken', data.access);
@@ -43,27 +40,25 @@ const apiService = {
     return await AsyncStorage.getItem('accessToken');
   },
 
-  refreshAccessToken: async () => {
+  refreshAccessToken: async (): Promise<string | null> => {
     try {
       const refreshToken = await AsyncStorage.getItem('refreshToken');
       if (!refreshToken) return null;
 
-      const response = await fetch(`${API_URL}/rest_api/refresh/`, {
+      const response = await fetch(`${API_URL}/rest_api/token/refresh/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: refreshToken }),
       });
 
       const data = await response.json();
-      if (response.ok) {
-        await AsyncStorage.setItem('accessToken', data.access);
-        return data.access;
-      } else {
-        console.error('Token refresh failed:', data);
-        return null;
-      }
+      if (!response.ok) throw new Error('Token refresh failed');
+
+      await AsyncStorage.setItem('accessToken', data.access);
+      await AsyncStorage.setItem('refreshToken', data.refresh);
+      return data.access;
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      console.error('Eroare la reîmprospătarea token-ului:', error);
       return null;
     }
   },
@@ -71,6 +66,7 @@ const apiService = {
   request: async (endpoint: string, method = 'GET', body?: any): Promise<any> => {
     try {
       let token = await apiService.getAccessToken();
+
       if (!token) {
         token = await apiService.refreshAccessToken();
         if (!token) throw new Error('Unauthorized');

@@ -1,54 +1,58 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
 
-//const API_URL = 'https://uti.umbgrup.ro';
+// const API_URL = 'https://uti.umbgrup.ro';
 const API_URL = 'https://test.uti.umbgrup.ro';
 
 export interface ServiceUtilaj {
-    data: string;
-    data_executie: string;
-    executat: boolean;
-    id: number;
-    mecanic: number; // mecanic id
-    observatii: string;
-    pdf: string;
-    titlu: string;
-    user: number; // user id
-    utilaj: number; // utilaj id
+  data: string;
+  data_executie: string;
+  executat: boolean;
+  id: number;
+  mecanic: number; // mecanic id
+  observatii: string;
+  pdf: string;
+  titlu: string;
+  user: number; // user id
+  utilaj: number; // utilaj id
 }
 
-const serviceUtilaj = {
-    findAllServicesOnUtilajId: async (utilajId: string, navigation: any): Promise<ServiceUtilaj[] | null> => {
-        const token = await AsyncStorage.getItem('accessToken');
-        console.log('Token:', token);
-        try {
-            const response = await fetch(`${API_URL}/service_utilaj/${utilajId}/`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+// Hook care gestionează serviciile pentru `ServiceUtilaj`
+export const useServiceUtilaj = () => {
+  const { setUserToken } = useAuth();
 
-            const data = await response.json();
-            if(response.status === 401 || response.status === 403) {
-                console.error('Unauthorized:', data);
-                AsyncStorage.removeItem('accessToken');
-                AsyncStorage.removeItem('refreshToken');
-                // go to login page
-                navigation.navigate('Login'); // Navighează spre Login
-                return null;
-            }
-            if (response.ok) {
-                return data;
-            } else {
-                console.error('Login failed:', response);
-                return null;
-            }
-        } catch (error) {
-            console.error('Error during login:', error);
-            return null;
-        }
-    },
-}
+  const findAllServicesOnUtilajId = async (utilajId: string): Promise<ServiceUtilaj[] | null> => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      console.log('Token:', token);
 
-export default serviceUtilaj;
+      const response = await fetch(`${API_URL}/service_utilaj/${utilajId}/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        console.error('Unauthorized:', response);
+        await AsyncStorage.removeItem('accessToken');
+        await AsyncStorage.removeItem('refreshToken');
+        setUserToken(null); // ✅ Navigăm la login
+        return null;
+      }
+
+      if (!response.ok) {
+        console.error('Request failed:', response);
+        return null;
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error during API call:', error);
+      return null;
+    }
+  };
+
+  return { findAllServicesOnUtilajId };
+};

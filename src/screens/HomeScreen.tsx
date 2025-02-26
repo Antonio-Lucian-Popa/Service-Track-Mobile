@@ -6,8 +6,9 @@ import { Button, Checkbox, Divider, TextInput, List } from 'react-native-paper';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { useEffect } from 'react';
 import { Picker } from '@react-native-picker/picker';
-import serviceUtilaj, { ServiceUtilaj } from '../services/ServiceUtilaj';
-import { useNavigation } from '@react-navigation/native';
+import { ServiceUtilaj } from '../services/ServiceUtilaj';
+import { useServiceUtilaj } from '../services/ServiceUtilaj';
+
 
 const HomeScreen = () => {
   const [formData, setFormData] = useState({
@@ -37,18 +38,19 @@ const HomeScreen = () => {
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [services, setServices] = useState<ServiceUtilaj[]>([]);
   const [selectedService] = useState<string>(formData.service);
-  const navigation = useNavigation();
+
+  const { findAllServicesOnUtilajId } = useServiceUtilaj();
 
   useEffect(() => {
     const fetchServices = async () => {
-      const servicesList = await serviceUtilaj.findAllServicesOnUtilajId('3544', navigation);
+      const servicesList = await findAllServicesOnUtilajId('3544');
       if(servicesList && servicesList.length > 0) {
         setServices(servicesList);
       }
     };
 
     fetchServices();
-  }, [navigation]);
+  }, [findAllServicesOnUtilajId]);
 
   useEffect(() => {
     handleChange('service', selectedService);
