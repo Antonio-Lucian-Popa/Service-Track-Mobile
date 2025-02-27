@@ -12,18 +12,19 @@ export default function RootNavigator() {
 
   useEffect(() => {
     const checkLogin = async () => {
-      const savedToken = await AsyncStorage.getItem('accessToken');
-      if (savedToken) {
-        setUserToken(savedToken); // ✅ Setăm token-ul dacă există deja
-      } else {
-        const refreshToken = await AsyncStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const newToken = await apiService.refreshAccessToken();
-          if (newToken) {
-            setUserToken(newToken); // ✅ Setăm accessToken reîmprospătat
-          }
-        }
+      let token = await AsyncStorage.getItem('accessToken');
+      if (token && apiService.isTokenExpired(token)) {
+        console.log('Access token is expired, trying to refresh...');
+        token = await apiService.refreshAccessToken();
       }
+
+      if (token) {
+        setUserToken(token);
+      } else {
+        await apiService.logout();
+        setUserToken(null);
+      }
+
       setLoading(false);
     };
 
@@ -31,6 +32,7 @@ export default function RootNavigator() {
   }, [setUserToken]);
 
   if (loading) return null;
+
 
   return <NavigationContainer>{userToken ? <Tabs /> : <AuthStack />}</NavigationContainer>;
 }

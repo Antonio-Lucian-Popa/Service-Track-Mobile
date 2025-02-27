@@ -266,9 +266,15 @@ interface AdaugaServiciuModalProps {
 
 const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDismiss, rowData }) => {
 
+    console.log("Row data: ", rowData);
+
+    const utilajId = rowData?.id;
+
+    const date = new Date();
+
     const [formData, setFormData] = useState({
         index: '',
-        data: null as Date | null, // 🔹 Stocăm data selectată (null inițial)
+        data: date, // 🔹 Stocăm data selectată (null inițial)
         rev: {
             motor: false,
             combustibil: false,
@@ -352,6 +358,8 @@ const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDi
                     <ScrollView contentContainerStyle={styles.scrollContainer}>
                         <Button onPress={onDismiss} style={styles.closeButton}>X</Button>
                         <Divider />
+
+                        <Text style={styles.modalSubtitle}>Utilaj: {utilajId}</Text>
 
                         {/* Câmp Index */}
                         <TextInput
@@ -482,6 +490,10 @@ const styles = StyleSheet.create({
     modalText: {
         fontSize: 18,
     },
+    modalSubtitle: {
+        fontSize: 15,
+        paddingLeft: 10,
+    },
     container: {
        // flex: 1,
         backgroundColor: '#f8f8f8',
@@ -517,7 +529,7 @@ const styles = StyleSheet.create({
         marginVertical: 5,
     },
     button: {
-        marginTop: 10,
+       // marginTop: 10,
         margin: 10,
     },
     pickerContainer: {

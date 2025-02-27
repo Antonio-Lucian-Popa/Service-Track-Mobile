@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
+import apiService from './AuthService';
 
 // const API_URL = 'https://uti.umbgrup.ro';
 const API_URL = 'https://test.uti.umbgrup.ro';
@@ -23,8 +23,8 @@ export const useServiceUtilaj = () => {
 
   const findAllServicesOnUtilajId = async (utilajId: string): Promise<ServiceUtilaj[] | null> => {
     try {
-      const token = await AsyncStorage.getItem('accessToken');
-      console.log('Token:', token);
+      const token = await apiService.getAccessToken();
+      if (!token) throw new Error('Unauthorized');
 
       const response = await fetch(`${API_URL}/service_utilaj/${utilajId}/`, {
         method: 'GET',
@@ -36,9 +36,8 @@ export const useServiceUtilaj = () => {
 
       if (response.status === 401 || response.status === 403) {
         console.error('Unauthorized:', response);
-        await AsyncStorage.removeItem('accessToken');
-        await AsyncStorage.removeItem('refreshToken');
-        setUserToken(null); // ✅ Navigăm la login
+        await apiService.logout();
+        setUserToken(null);
         return null;
       }
 

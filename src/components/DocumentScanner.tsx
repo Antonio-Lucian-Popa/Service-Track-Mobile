@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f8f8',
-    padding: 10,
+   // padding: 10,
   },
   buttonRow: {
     flexDirection: 'row',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    paddingBottom: 20,
+   // paddingBottom: 20,
   },
   imageWrapper: {
     position: 'relative',

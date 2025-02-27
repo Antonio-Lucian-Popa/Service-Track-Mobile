@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
 
 const API_URL = 'https://uti.umbgrup.ro';
 
@@ -8,6 +9,7 @@ interface AuthResponse {
 }
 
 const apiService = {
+ 
   login: async (username: string, password: string): Promise<AuthResponse | null> => {
     try {
       const response = await fetch(`${API_URL}/rest_api/token/`, {
@@ -37,7 +39,14 @@ const apiService = {
   },
 
   getAccessToken: async () => {
-    return await AsyncStorage.getItem('accessToken');
+    let token = await AsyncStorage.getItem('accessToken');
+
+    if (token && apiService.isTokenExpired(token)) {
+      console.log('Access token is expired, refreshing...');
+      token = await apiService.refreshAccessToken();
+    }
+
+    return token;
   },
 
   refreshAccessToken: async (): Promise<string | null> => {
@@ -58,8 +67,19 @@ const apiService = {
       await AsyncStorage.setItem('refreshToken', data.refresh);
       return data.access;
     } catch (error) {
-      console.error('Eroare la reîmprospătarea token-ului:', error);
+      console.error('Error refreshing token:', error);
       return null;
+    }
+  },
+
+  isTokenExpired: (token: string): boolean => {
+    try {
+      const decoded: any = jwtDecode(token);
+      if (!decoded.exp) return false;
+      return Date.now() >= decoded.exp * 1000;
+    } catch (error) {
+      console.error('Error decoding token:', error);
+      return true;
     }
   },
 
