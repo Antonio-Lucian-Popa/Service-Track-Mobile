@@ -365,7 +365,7 @@ const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDi
 
                         {/* Câmp Index */}
                         <TextInput
-                            label="Index"
+                            label="Index*"
                             mode="outlined"
                             value={formData.index}
                             onChangeText={(text) => handleChange('index', text)}
@@ -375,7 +375,7 @@ const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDi
                         {/* 🔥 Date Picker - modificat pentru a fi clicabil */}
                         <TouchableOpacity onPress={() => setDatePickerVisible(true)}>
                             <TextInput
-                                label="Data"
+                                label="Data*"
                                 mode="outlined"
                                 value={formData.data ? formData.data.toLocaleDateString() : ''}
                                 style={styles.input}
@@ -442,14 +442,19 @@ const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDi
 
                         <View style={styles.pickerContainer}>
                             <Text style={styles.labelText}>Service</Text>
-                            <Picker
-                                selectedValue={selectedService}
-                                onValueChange={(itemValue) => handleChange('service', itemValue)}
-                            >
-                                {services.map((service, index) => (
-                                    <Picker.Item key={index} label={service.titlu} value={service} />
-                                ))}
-                            </Picker>
+
+                            {services.length > 0 ? (
+                                <Picker
+                                    selectedValue={selectedService}
+                                    onValueChange={(itemValue) => handleChange('service', itemValue)}
+                                >
+                                    {services.map((service, index) => (
+                                        <Picker.Item key={index} label={service.titlu} value={service} />
+                                    ))}
+                                </Picker>
+                            ) : (
+                                <Text>Nu exista servicii disponibile</Text>
+                            )}
                         </View>
 
                         {/* TextArea pentru detalii lucrări */}
