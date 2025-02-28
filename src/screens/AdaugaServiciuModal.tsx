@@ -303,14 +303,16 @@ const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDi
     const { findAllServicesOnUtilajId } = useServiceUtilaj();
 
     useEffect(() => {
-        const fetchServices = async () => {
-            const servicesList = await findAllServicesOnUtilajId('3544');
-            if (servicesList && servicesList.length > 0) {
-                setServices(servicesList);
-            }
-        };
+        if(rowData) {
+            const fetchServices = async () => {
+                const servicesList = await findAllServicesOnUtilajId(rowData?.id);
+                if (servicesList && servicesList.length > 0) {
+                    setServices(servicesList);
+                }
+            };
 
-        fetchServices();
+            fetchServices();
+        }
     }, []);
 
     useEffect(() => {
@@ -493,6 +495,7 @@ const styles = StyleSheet.create({
     modalSubtitle: {
         fontSize: 15,
         paddingLeft: 10,
+        paddingTop: 10,
     },
     container: {
        // flex: 1,

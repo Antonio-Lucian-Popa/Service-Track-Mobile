@@ -21,7 +21,7 @@ export interface ServiceUtilaj {
 export const useServiceUtilaj = () => {
   const { setUserToken } = useAuth();
 
-  const findAllServicesOnUtilajId = async (utilajId: string): Promise<ServiceUtilaj[] | null> => {
+  const findAllServicesOnUtilajId = async (utilajId: number): Promise<ServiceUtilaj[] | null> => {
     try {
       const token = await apiService.getAccessToken();
       if (!token) throw new Error('Unauthorized');
