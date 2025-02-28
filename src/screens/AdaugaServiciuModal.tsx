@@ -342,6 +342,11 @@ const AdaugaServiciuModal: React.FC<AdaugaServiciuModalProps> = ({ visible, onDi
             return;
         }
 
+        if(!formData.service && !formData.detaliiLucrariEfectuate) {
+            Alert.alert('Eroare', 'Trebuie sa scrieti macar detalile lucrarilor efectuate sau sa selectati un service!');
+            return;
+        }
+
         Alert.alert('Succes', JSON.stringify(formData, null, 2));
     };
 
